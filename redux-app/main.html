@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {
+            margin-left: 30px;
+            margin-right: 30px;
+        } 
+    </style>
+    <title>CRUD with Redux</title>
+    <script src="./node_modules/redux/dist/redux.min.js"></script>
+    <script>
+        function reducer(state, action) {
+            //console.log(state, action);
+            if (state === undefined) {
+                return {
+                    mode: 'create',
+                    max_id: 2,
+                    selected_id: 1,
+                    contents: [
+                        {id:1, title:'HTML', desc: 'HTML is HyperText Markup Language ...'},
+                        {id:2, title:'CSS', desc: 'CSS is Cascading Style Sheet ...'}
+                    ]
+                };
+            }
+            let newState;
+            if (action.type === 'SELECT') {
+                newState = Object.assign({}, state, {
+                    mode: action.mode,
+                    selected_id: action.id
+                });
+            } else if (action.type === 'CREATE') {
+                let newMaxId = state.max_id + 1;
+                let newContents = state.contents.concat();
+                newContents.push({id: newMaxId, title: action.title, desc: action.desc});
+                newState = Object.assign({}, state, {
+                    max_id: newMaxId,
+                    selected_id: newMaxId,
+                    mode: 'read',
+                    contents: newContents
+                });
+            } else if (action.type === 'UPDATE') {
+                let newContents = [];
+                for (item of state.contents) {
+                    if (item.id === action.id) {
+                        newContents.push({id: action.id, title: action.title, desc: action.desc});
+                    } else {
+                        newContents.push(item);
+                    }
+                }
+                newState = Object.assign({}, state, {
+                    mode: 'read',
+                    contents: newContents
+                });
+            } else if (action.type === 'DELETE') {
+                let newContents = [];
+                for (item of state.contents) {
+                    if (item.id !== state.selected_id)
+                        newContents.push(item);
+                }
+                let newSelectedId = newContents[0].id;
+                newState = Object.assign({}, state, {
+                    selected_id: newSelectedId,
+                    contents: newContents
+                });            
+            } else if (action.type === 'CHANGE_MODE') {
+                newState = Object.assign({}, state, {
+                    mode: action.mode
+                });
+            }
+            //console.log(action, state, newState);
+            return newState;
+        }
+        const store = Redux.createStore(reducer,
+                    window.__REDUX_DEVTOOLS_EXTENSION__ && window.__REDUX_DEVTOOLS_EXTENSION__());          
+
+        function subject() {
+            document.querySelector('#subject').innerHTML = `
+                <header>
+                    <h1>WEB</h1>
+                    Hello, Web!!!
+                </header>            
+            `;
+        }
+        function toc() {
+            let state = store.getState();
+            let liTags = '';
+            for (item of state.contents) {
+                liTags += `<li>
+                                <a onclick="
+                                    event.preventDefault();
+                                    let action = {type:'SELECT', mode:'read', id: ${item.id}};
+                                    store.dispatch(action);
+                                    " href="${item.id}">${item.title}
+                                </a>
+                            </li>`;
+            }
+            document.querySelector('#toc').innerHTML = `
+                <nav>
+                    <ol>
+                        ${liTags}
+                    </ol>
+                </nav>            
+            `;
+        }
+        function control() {
+            document.querySelector('#control').innerHTML = `
+                <div>
+                    <br><hr>
+                    <button onclick="
+                        store.dispatch({type: 'CHANGE_MODE', mode: 'create'});
+                    ">생성</button>&nbsp;&nbsp;
+                    <button onclick="
+                        store.dispatch({type: 'CHANGE_MODE', mode: 'update'});
+                    ">수정</button>&nbsp;&nbsp;
+                    <button onclick="
+                        store.dispatch({type: 'DELETE'});
+                    ">삭제</button>
+                </div>                  
+            `;
+        }
+        function content() {
+            let state = store.getState();
+            if (state.mode === 'read') {
+                let aTitle, aDesc;
+                for (item of state.contents) {
+                    if (item.id === state.selected_id) {
+                        aTitle = item.title;
+                        aDesc = item.desc;
+                        break;
+                    }
+                }
+                document.querySelector('#content').innerHTML = `
+                    <article>
+                        <hr><br>        
+                        <h2>${aTitle}</h2>
+                        ${aDesc}
+                    </article>                 
+                `;
+            } else if (state.mode === 'create') {
+                document.querySelector('#content').innerHTML = `
+                    <article>
+                        <hr><br>       
+                        <form onsubmit="
+                            event.preventDefault();
+                            let _title = this.title.value;
+                            let _desc = this.desc.value;
+                            store.dispatch({
+                                type: 'CREATE', title: _title, desc: _desc
+                            });
+                        ">
+                            <p><input type="text" name="title" placeholder="제목"></p>
+                            <p><textarea name="desc" placeholder="내용" cols="30" rows="3"></textarea></p>
+                            <p><input type="submit"></p>
+                        </form>
+                    </article>                 
+                `;
+            } else if (state.mode === 'update') {
+                let aTitle, aDesc;
+                for (item of state.contents) {
+                    if (item.id === state.selected_id) {
+                        aTitle = item.title;
+                        aDesc = item.desc;
+                        break;
+                    }
+                }
+                document.querySelector('#content').innerHTML = `
+                    <article>
+                        <br><hr>        
+                        <form onsubmit="
+                            event.preventDefault();
+                            let _title = this.title.value;
+                            let _desc = this.desc.value;
+                            store.dispatch({
+                                type: 'UPDATE', id: ${state.selected_id}, title: _title, desc: _desc
+                            });
+                        ">
+                            <p><input type="text" name="title" value=${aTitle}></p>
+                            <p><textarea name="desc" cols="30" rows="3">${aDesc}</textarea></p>
+                            <p><input type="submit"></p>
+                        </form>
+                    </article>                 
+                `;
+            }
+        }
+    </script>
+</head>
+<body>    
+    <div id="subject"></div>
+    <div id="toc"></div>
+    <div id="control"></div>
+    <div id="content"></div>
+    <script>
+        store.subscribe(toc);
+        store.subscribe(content);
+        subject();
+        toc();      // Table of Contents
+        control();
+        content();
+    </script>
+</body>
+</html>
