@@ -2,14 +2,22 @@ import React, { Component } from 'react';
 
 export default class Nav extends Component {
     render() {
-        return `
+        let tags = [];
+        for (let item of this.props.data) {
+            tags.push(<li key={item.id}><a href="#" data-id={item.id} onClick={
+                function(e) {
+                    e.preventDefault();
+                    this.props.onClick(parseInt(e.target.dataset.id));
+                }.bind(this)
+            }>{item.title}</a></li>)
+        }
+        //console.log(tags);
+        return (
             <nav>
                 <ol>
-                    <li><a href="html">HTML</a></li>
-                    <li><a href="css">CSS</a></li>
-                    <li><a href="js">JavaScript</a></li>
+                    {tags}
                 </ol> 
             </nav>
-        `;
+        );
     }
 }

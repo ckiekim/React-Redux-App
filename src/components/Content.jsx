@@ -2,11 +2,11 @@ import React, { Component } from 'react';
 
 export default class Content extends Component {
     render() {
-        return `
+        return (
             <article>
-                <h2>Welcome to WEB</h2>
-                Hello, everyone. 
+                <h2>{this.props.title}</h2>
+                {this.props.desc} 
             </article>
-        `;
+        );
     }
 }
